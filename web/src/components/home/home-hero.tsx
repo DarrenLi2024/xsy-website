@@ -14,8 +14,6 @@ export function HomeHero({ stats, slides }: Props) {
   const [current, setCurrent] = useState(0);
   const hasSlides = slides.length > 0;
 
-  if (slides.length === 0) return null;
-
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % slides.length);
   }, [slides.length]);
@@ -26,7 +24,9 @@ export function HomeHero({ stats, slides }: Props) {
     return () => clearInterval(timer);
   }, [slides.length, next]);
 
-  const slide = hasSlides ? slides[current] : null;
+  if (!hasSlides) return null;
+
+  const slide = slides[current];
 
   return (
     <section id="section-hero" className="relative overflow-hidden bg-black">
@@ -34,8 +34,8 @@ export function HomeHero({ stats, slides }: Props) {
       {hasSlides ? (
         <div className="absolute inset-0 transition-opacity duration-700">
           <Image
-            src={slide!.image || ""}
-            alt={slide!.subtitle || ""}
+            src={slide.image || ""}
+            alt={slide.subtitle || ""}
             fill
             priority
             sizes="100vw"

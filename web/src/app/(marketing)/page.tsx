@@ -13,6 +13,7 @@ import { HomeTrending } from "@/components/home/home-trending";
 import { getHomePageDataSafe } from "@/lib/data/home";
 
 export const revalidate = 60;
+export const maxDuration = 30;
 
 export default async function HomePage() {
   const data = await getHomePageDataSafe();

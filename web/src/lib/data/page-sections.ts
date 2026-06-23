@@ -42,15 +42,11 @@ export async function getPublicPageSection(code: PublicSectionCode) {
 export async function getActivePublicPageSectionsMap(
   codes: readonly PublicSectionCode[],
 ) {
-  try {
-    const sections = await prisma.pageSection.findMany({
-      where: { code: { in: [...codes] }, active: true },
-      include: sectionInclude,
-    });
-    return new Map(sections.map((section) => [section.code as PublicSectionCode, section]));
-  } catch {
-    return new Map<PublicSectionCode, never>();
-  }
+  const sections = await prisma.pageSection.findMany({
+    where: { code: { in: [...codes] }, active: true },
+    include: sectionInclude,
+  });
+  return new Map(sections.map((section) => [section.code as PublicSectionCode, section]));
 }
 
 export type PublicPageSectionPayload = Awaited<ReturnType<typeof getPublicPageSection>>;
