@@ -5,7 +5,6 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { ToastProvider } from "@/components/admin/toast";
 
 export const maxDuration = 30;
-export const revalidate = 0;
 
 export default async function AdminShellLayout({
   children,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,6 +15,7 @@ import {
   Filler,
 } from "chart.js";
 import { Bar, Line, Doughnut } from "react-chartjs-2";
+import type { AdminChartStats } from "@/lib/data/admin-stats";
 
 ChartJS.register(
   CategoryScale,
@@ -28,6 +29,22 @@ ChartJS.register(
   Legend,
   Filler,
 );
+
+const ChartStatsContext = createContext<AdminChartStats | null>(null);
+
+export function ChartStatsProvider({
+  stats,
+  children,
+}: {
+  stats: AdminChartStats;
+  children: React.ReactNode;
+}) {
+  return <ChartStatsContext.Provider value={stats}>{children}</ChartStatsContext.Provider>;
+}
+
+function useChartStats(): AdminChartStats | null {
+  return useContext(ChartStatsContext);
+}
 
 const chartColors = {
   blue: "rgba(6, 182, 212, 0.8)",
@@ -50,24 +67,7 @@ const doughnutColors = [
   "rgba(168, 85, 247, 0.85)",
 ];
 
-function useChartData() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/admin/stats")
-      .then((r) => r.json())
-      .then((json) => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  return { data, loading };
-}
-
-function baseOptions(title: string) {
+function baseOptions() {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -99,25 +99,14 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 export function ArticleTrendChart() {
-  const { data, loading } = useChartData();
-
-  if (loading) {
-    return (
-      <Card title="文章发布趋势">
-        <div className="flex h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
-        </div>
-      </Card>
-    );
-  }
-
+  const data = useChartStats();
   if (!data?.articleTrend) return null;
 
   const chartData = {
-    labels: data.articleTrend.map((d: any) => d.label),
+    labels: data.articleTrend.map((d) => d.label),
     datasets: [
       {
-        data: data.articleTrend.map((d: any) => d.count),
+        data: data.articleTrend.map((d) => d.count),
         borderColor: chartColors.blue,
         backgroundColor: chartColors.blueLight,
         fill: true,
@@ -131,31 +120,20 @@ export function ArticleTrendChart() {
 
   return (
     <Card title="文章发布趋势（近12个月）">
-      <Line data={chartData} options={baseOptions("")} />
+      <Line data={chartData} options={baseOptions()} />
     </Card>
   );
 }
 
 export function CompanyTrendChart() {
-  const { data, loading } = useChartData();
-
-  if (loading) {
-    return (
-      <Card title="企业入驻趋势">
-        <div className="flex h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-        </div>
-      </Card>
-    );
-  }
-
+  const data = useChartStats();
   if (!data?.companyTrend) return null;
 
   const chartData = {
-    labels: data.companyTrend.map((d: any) => d.label),
+    labels: data.companyTrend.map((d) => d.label),
     datasets: [
       {
-        data: data.companyTrend.map((d: any) => d.count),
+        data: data.companyTrend.map((d) => d.count),
         backgroundColor: chartColors.emerald,
         borderRadius: 4,
         borderWidth: 0,
@@ -166,31 +144,20 @@ export function CompanyTrendChart() {
 
   return (
     <Card title="企业入驻趋势（近12个月）">
-      <Bar data={chartData} options={baseOptions("")} />
+      <Bar data={chartData} options={baseOptions()} />
     </Card>
   );
 }
 
 export function IndustryDistributionChart() {
-  const { data, loading } = useChartData();
-
-  if (loading) {
-    return (
-      <Card title="行业分布">
-        <div className="flex h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
-        </div>
-      </Card>
-    );
-  }
-
+  const data = useChartStats();
   if (!data?.industries) return null;
 
   const chartData = {
-    labels: data.industries.map((d: any) => d.name),
+    labels: data.industries.map((d) => d.name),
     datasets: [
       {
-        data: data.industries.map((d: any) => d.count),
+        data: data.industries.map((d) => d.count),
         backgroundColor: doughnutColors.slice(0, data.industries.length),
         borderColor: "rgb(15, 23, 42)",
         borderWidth: 3,
@@ -224,18 +191,7 @@ export function IndustryDistributionChart() {
 }
 
 export function ContentStatusChart() {
-  const { data, loading } = useChartData();
-
-  if (loading) {
-    return (
-      <Card title="文章发布状态">
-        <div className="flex h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-        </div>
-      </Card>
-    );
-  }
-
+  const data = useChartStats();
   if (!data?.articleStatuses) return null;
 
   const statusLabels: Record<string, string> = {
@@ -248,10 +204,10 @@ export function ContentStatusChart() {
   };
 
   const chartData = {
-    labels: data.articleStatuses.map((d: any) => statusLabels[d.status] || d.status),
+    labels: data.articleStatuses.map((d) => statusLabels[d.status] || d.status),
     datasets: [
       {
-        data: data.articleStatuses.map((d: any) => d.count),
+        data: data.articleStatuses.map((d) => d.count),
         backgroundColor: [
           "rgba(148, 163, 184, 0.8)",
           "rgba(245, 158, 11, 0.8)",

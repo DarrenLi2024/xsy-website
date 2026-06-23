@@ -1,6 +1,6 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
-import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import { verifySessionToken, SESSION_COOKIE_NAME, type SessionPayload } from "@/lib/auth/session";
 import type { AdminRole } from "@prisma/client";
 
 export type AdminUser = {
@@ -84,19 +84,24 @@ export function hasPermit(adminRole: AdminRole | null, permit: AdminPermit): boo
   return permits.includes(permit);
 }
 
-export async function getAdminUser(): Promise<AdminUser | null> {
+/** 从 JWT 构建管理员对象，避免每次请求都查库 */
+export function adminUserFromSession(session: SessionPayload): AdminUser {
+  return {
+    id: session.sub,
+    email: session.email,
+    name: null,
+    role: "ADMIN",
+    adminRole: session.adminRole ?? null,
+  };
+}
+
+export const getAdminUser = cache(async (): Promise<AdminUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   const session = await verifySessionToken(token);
   if (!session || session.role !== "ADMIN") return null;
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.sub },
-    select: { id: true, email: true, name: true, role: true, adminRole: true },
-  });
-  if (!user) return null;
-  return user as AdminUser;
-}
+  return adminUserFromSession(session);
+});
 
 export async function requireAdmin(): Promise<AdminUser> {
   const user = await getAdminUser();

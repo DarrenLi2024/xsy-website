@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
+import { getAdminCompanyOptions } from "@/lib/data/admin-companies";
 import PageHeader from "@/components/admin/page-header";
 import ProductForm from "@/components/admin/forms/product-form";
 import Link from "next/link";
@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function EditProductPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
-  const user = await getAdminUser();
-  if (!user) return null;
-
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: { company: { select: { id: true, name: true } } },
-  });
+  const [product, companies] = await Promise.all([
+    prisma.product.findUnique({
+      where: { id },
+      include: { company: { select: { id: true, name: true } } },
+    }),
+    getAdminCompanyOptions(),
+  ]);
 
   if (!product) {
     return (
@@ -32,12 +32,6 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
       </div>
     );
   }
-
-  const companies = await prisma.company.findMany({
-    where: { deletedAt: null },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
 
   return (
     <div>

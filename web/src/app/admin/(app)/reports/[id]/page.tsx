@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/admin/page-header";
 import ReportForm from "@/components/admin/forms/report-form";
@@ -16,9 +15,6 @@ const categoryLabels: Record<string, string> = {
 
 export default async function EditReportPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-
-  const user = await getAdminUser();
-  if (!user) return null;
 
   const report = await prisma.report.findUnique({ where: { id } });
   if (!report) notFound();

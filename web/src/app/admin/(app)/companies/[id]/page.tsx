@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
 import PageHeader from "@/components/admin/page-header";
 import CompanyForm from "@/components/admin/forms/company-form";
 import Link from "next/link";
@@ -8,9 +7,6 @@ export const dynamic = "force-dynamic";
 
 export default async function EditCompanyPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-
-  const user = await getAdminUser();
-  if (!user) return null;
 
   const company = await prisma.company.findUnique({
     where: { id },

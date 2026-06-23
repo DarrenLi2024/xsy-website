@@ -38,27 +38,16 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { company: { select: { id: true, name: true, slug: true } } },
+      include: {
+        company: { select: { id: true, name: true, slug: true } },
+        _count: { select: { applications: true } },
+      },
     }),
     prisma.job.count({ where }),
   ]);
 
-  // Fetch application counts separately
-  const jobIds = items.map((j) => j.id);
-  const appCounts = await prisma.jobApplication.groupBy({
-    by: ["jobId"],
-    where: { jobId: { in: jobIds } },
-    _count: { jobId: true },
-  });
-  const countMap = new Map(appCounts.map((c) => [c.jobId, c._count.jobId]));
-
-  const enrichedItems = items.map((j) => ({
-    ...j,
-    _count: { applications: countMap.get(j.id) ?? 0 },
-  }));
-
   return ok({
-    items: enrichedItems,
+    items,
     total,
     page,
     totalPages: Math.ceil(total / PAGE_SIZE),

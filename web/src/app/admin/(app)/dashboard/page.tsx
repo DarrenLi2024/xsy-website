@@ -1,6 +1,8 @@
 import { getAdminDashboardStats } from "@/lib/data/admin-dashboard";
+import { getAdminChartStats } from "@/lib/data/admin-stats";
 import StatsCard from "@/components/admin/stats-card";
 import {
+  ChartStatsProvider,
   ArticleTrendChart,
   CompanyTrendChart,
   IndustryDistributionChart,
@@ -11,6 +13,11 @@ import Link from "next/link";
 export const revalidate = 30;
 
 export default async function AdminDashboardPage() {
+  const [dashboardStats, chartStats] = await Promise.all([
+    getAdminDashboardStats(),
+    getAdminChartStats(),
+  ]);
+
   const {
     totalArticles,
     totalCompanies,
@@ -23,7 +30,7 @@ export default async function AdminDashboardPage() {
     totalJobs,
     totalAds,
     monthArticles,
-  } = await getAdminDashboardStats();
+  } = dashboardStats;
 
   return (
     <div>
@@ -51,15 +58,17 @@ export default async function AdminDashboardPage() {
         <StatsCard label="活跃广告" value={totalAds} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <ArticleTrendChart />
-        <CompanyTrendChart />
-      </div>
+      <ChartStatsProvider stats={chartStats}>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <ArticleTrendChart />
+          <CompanyTrendChart />
+        </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <IndustryDistributionChart />
-        <ContentStatusChart />
-      </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <IndustryDistributionChart />
+          <ContentStatusChart />
+        </div>
+      </ChartStatsProvider>
 
       {(pendingCompanies > 0 || pendingReviewArticles > 0) && (
         <div className="mt-10">

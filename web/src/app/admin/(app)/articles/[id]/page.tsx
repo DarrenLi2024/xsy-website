@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
+import { getAdminCompanyOptions } from "@/lib/data/admin-companies";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/admin/page-header";
 import ArticleForm from "@/components/admin/forms/article-form";
@@ -10,16 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function EditArticlePage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
-  const user = await getAdminUser();
-  if (!user) return null;
-
   const [article, companies] = await Promise.all([
     prisma.article.findUnique({ where: { id }, include: { company: { select: { name: true } } } }),
-    prisma.company.findMany({
-      where: { deletedAt: null },
-      select: { id: true, name: true, slug: true },
-      orderBy: { name: "asc" },
-    }),
+    getAdminCompanyOptions(),
   ]);
 
   if (!article || article.deletedAt) notFound();

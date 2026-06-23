@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/admin/page-header";
 import JobForm from "@/components/admin/forms/job-form";
@@ -9,9 +8,6 @@ export const dynamic = "force-dynamic";
 
 export default async function EditJobPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-
-  const user = await getAdminUser();
-  if (!user) return null;
 
   const job = await prisma.job.findUnique({
     where: { id },

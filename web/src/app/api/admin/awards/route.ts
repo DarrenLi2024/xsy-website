@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminFromRequest, unauthorized, ok, created, badRequest } from "@/lib/admin-api";
+import { getAdminAwardYears } from "@/lib/data/admin-awards";
 
 const PAGE_SIZE = 20;
 
@@ -35,11 +36,7 @@ export async function GET(req: NextRequest) {
       take: PAGE_SIZE,
     }),
     prisma.awardCampaign.count({ where }),
-    prisma.awardCampaign.findMany({
-      select: { year: true },
-      distinct: ["year"],
-      orderBy: { year: "desc" },
-    }),
+    getAdminAwardYears(),
   ]);
 
   return ok({
@@ -47,7 +44,7 @@ export async function GET(req: NextRequest) {
     total,
     page,
     totalPages: Math.ceil(total / PAGE_SIZE),
-    years: years.map((y) => y.year),
+    years,
   });
 }
 
