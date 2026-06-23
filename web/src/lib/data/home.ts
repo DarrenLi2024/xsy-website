@@ -1,53 +1,52 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, CompanyStatus, EventStatus } from "@prisma/client";
-import { getPublicPageSection } from "./page-sections";
+import { getActivePublicPageSectionsMap, type PublicSectionCode } from "./page-sections";
 
-const HOME_QUERY_TIMEOUT_MS = 1800;
-const DB_RETRY_COOLDOWN_MS = 30000;
-let dbRetryAfter = 0;
+const HOME_SECTION_CODES = [
+  "trending",
+  "articles-feed",
+  "companies",
+  "events",
+  "reports",
+  "awards",
+  "hero",
+  "topics",
+  "testimonials",
+  "cta",
+] as const satisfies readonly PublicSectionCode[];
 
 export async function getHomePageData() {
   const now = new Date();
 
-  // 先获取所有板块的 active 状态
-  const [
-    trendingSection,
-    feedSection,
-    companiesSection,
-    eventsSection,
-    reportsSection,
-    awardsSection,
-    heroSection,
-    topicsSection,
-    testimonialsSection,
-    ctaSection,
-  ] = await Promise.all([
-    getPublicPageSection("trending"),
-    getPublicPageSection("articles-feed"),
-    getPublicPageSection("companies"),
-    getPublicPageSection("events"),
-    getPublicPageSection("reports"),
-    getPublicPageSection("awards"),
-    getPublicPageSection("hero"),
-    getPublicPageSection("topics"),
-    getPublicPageSection("testimonials"),
-    getPublicPageSection("cta"),
+  const [sectionMap, stats] = await Promise.all([
+    getActivePublicPageSectionsMap(HOME_SECTION_CODES),
+    Promise.all([
+      prisma.company.count({ where: { status: CompanyStatus.APPROVED, deletedAt: null } }),
+      prisma.article.count({
+        where: { status: ArticleStatus.PUBLISHED, deletedAt: null },
+      }),
+      prisma.event.count({
+        where: { status: { in: [EventStatus.UPCOMING, EventStatus.ONGOING] } },
+      }),
+    ]).then(([companiesCount, articlesCount, eventsCount]) => ({
+      companiesCount,
+      articlesCount,
+      eventsCount,
+    })),
   ]);
 
-  // Stats always fetch
-  const stats = await Promise.all([
-    prisma.company.count({ where: { status: CompanyStatus.APPROVED, deletedAt: null } }),
-    prisma.article.count({
-      where: { status: ArticleStatus.PUBLISHED, deletedAt: null },
-    }),
-    prisma.event.count({ where: { status: { in: [EventStatus.UPCOMING, EventStatus.ONGOING] } } }),
-  ]).then(([companiesCount, articlesCount, eventsCount]) => ({
-    companiesCount,
-    articlesCount,
-    eventsCount,
-  }));
+  const trendingSection = sectionMap.get("trending") ?? null;
+  const feedSection = sectionMap.get("articles-feed") ?? null;
+  const companiesSection = sectionMap.get("companies") ?? null;
+  const eventsSection = sectionMap.get("events") ?? null;
+  const reportsSection = sectionMap.get("reports") ?? null;
+  const awardsSection = sectionMap.get("awards") ?? null;
+  const heroSection = sectionMap.get("hero") ?? null;
+  const topicsSection = sectionMap.get("topics") ?? null;
+  const testimonialsSection = sectionMap.get("testimonials") ?? null;
+  const ctaSection = sectionMap.get("cta") ?? null;
 
-  // 根据板块 active 状态决定是否查询数据
   const [
     featuredArticles,
     latestArticles,
@@ -57,51 +56,75 @@ export async function getHomePageData() {
     reports,
     ad,
   ] = await Promise.all([
-    // Featured articles (always shown if articles-feed is active, needed for trending too)
     feedSection || trendingSection
       ? prisma.article.findMany({
           where: { status: ArticleStatus.PUBLISHED, deletedAt: null, isFeatured: true },
           orderBy: { publishedAt: "desc" },
           take: 4,
           select: {
-            id: true, slug: true, title: true, summary: true, coverImage: true, category: true, publishedAt: true,
+            id: true,
+            slug: true,
+            title: true,
+            summary: true,
+            coverImage: true,
+            category: true,
+            publishedAt: true,
           },
         })
       : Promise.resolve([]),
-    // Latest articles
     feedSection
       ? prisma.article.findMany({
           where: { status: ArticleStatus.PUBLISHED, deletedAt: null },
           orderBy: { publishedAt: "desc" },
           take: 8,
           select: {
-            id: true, slug: true, title: true, summary: true, coverImage: true, category: true, publishedAt: true,
+            id: true,
+            slug: true,
+            title: true,
+            summary: true,
+            coverImage: true,
+            category: true,
+            publishedAt: true,
           },
         })
       : Promise.resolve([]),
-    // Companies
     companiesSection
       ? prisma.company.findMany({
           where: { status: CompanyStatus.APPROVED, deletedAt: null },
           orderBy: { updatedAt: "desc" },
           take: 8,
-          select: { slug: true, name: true, logo: true, industry: true, city: true, description: true },
+          select: {
+            slug: true,
+            name: true,
+            logo: true,
+            industry: true,
+            city: true,
+            description: true,
+          },
         })
       : Promise.resolve([]),
-    // Events
     eventsSection
       ? prisma.event.findMany({
-          where: { status: { in: [EventStatus.UPCOMING, EventStatus.ONGOING] }, endDate: { gte: now } },
+          where: {
+            status: { in: [EventStatus.UPCOMING, EventStatus.ONGOING] },
+            endDate: { gte: now },
+          },
           orderBy: { startDate: "asc" },
           take: 9,
-          select: { id: true, title: true, type: true, startDate: true, endDate: true, location: true, coverImage: true },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            startDate: true,
+            endDate: true,
+            location: true,
+            coverImage: true,
+          },
         })
       : Promise.resolve([]),
-    // Award
     awardsSection
       ? prisma.awardCampaign.findFirst({ where: { active: true }, orderBy: { year: "desc" } })
       : Promise.resolve(null),
-    // Reports
     reportsSection
       ? prisma.report.findMany({
           where: { publishedAt: { not: null } },
@@ -110,9 +133,13 @@ export async function getHomePageData() {
           select: { id: true, title: true, description: true, category: true, price: true },
         })
       : Promise.resolve([]),
-    // Ad
     prisma.ad.findFirst({
-      where: { active: true, startDate: { lte: now }, endDate: { gte: now }, slot: { code: "home_hero_banner" } },
+      where: {
+        active: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+        slot: { code: "home_hero_banner" },
+      },
       orderBy: { sort: "asc" },
       include: { slot: true },
     }),
@@ -120,9 +147,7 @@ export async function getHomePageData() {
 
   const pool = [
     ...featuredArticles,
-    ...latestArticles.filter(
-      (a) => !featuredArticles.some((f) => f.id === a.id),
-    ),
+    ...latestArticles.filter((a) => !featuredArticles.some((f) => f.id === a.id)),
   ];
   const trendingMain = trendingSection && pool.length > 0 ? pool[0] : null;
   const trendingSide = trendingSection ? pool.slice(1, 4) : [];
@@ -164,24 +189,19 @@ export const emptyHomePayload: HomePagePayload = {
   ctaItems: [],
 };
 
-export async function getHomePageDataSafe(): Promise<HomePagePayload> {
-  const now = Date.now();
-  if (now < dbRetryAfter) {
-    return emptyHomePayload;
-  }
+const getCachedHomePageData = unstable_cache(
+  async () => {
+    try {
+      return await getHomePageData();
+    } catch (err) {
+      console.error("[getHomePageData]", err);
+      return emptyHomePayload;
+    }
+  },
+  ["home-page-data"],
+  { revalidate: 60, tags: ["home"] },
+);
 
-  try {
-    const data = await Promise.race([
-      getHomePageData(),
-      new Promise<HomePagePayload>((_, reject) =>
-        setTimeout(() => reject(new Error("home-data-timeout")), HOME_QUERY_TIMEOUT_MS),
-      ),
-    ]);
-    dbRetryAfter = 0;
-    return data;
-  } catch (err) {
-    console.error("[getHomePageData]", err);
-    dbRetryAfter = Date.now() + DB_RETRY_COOLDOWN_MS;
-    return emptyHomePayload;
-  }
+export async function getHomePageDataSafe(): Promise<HomePagePayload> {
+  return getCachedHomePageData();
 }

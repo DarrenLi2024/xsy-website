@@ -12,7 +12,6 @@ import { HomeTopics } from "@/components/home/home-topics";
 import { HomeTrending } from "@/components/home/home-trending";
 import { getHomePageDataSafe } from "@/lib/data/home";
 
-export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function HomePage() {
