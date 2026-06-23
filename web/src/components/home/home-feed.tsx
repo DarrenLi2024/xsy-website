@@ -138,7 +138,7 @@ function FeaturedCarousel({
             className="flex transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ transform: `translateX(-${current * 100}%)` }}
           >
-            {items.map((a) => (
+            {items.map((a, index) => (
               <Link
                 key={a.id}
                 href={`/articles/${a.slug}`}
@@ -151,7 +151,7 @@ function FeaturedCarousel({
                       alt=""
                       fill
                       className="object-cover transition duration-700 ease-out group-hover:scale-[1.05] motion-reduce:group-hover:scale-100"
-                      priority
+                      priority={index === 0}
                       sizes="100vw"
                     />
                   ) : (

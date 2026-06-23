@@ -44,7 +44,6 @@ export function HomeTrending({ trendingMain, trendingSide }: Props) {
                   fill
                   className="object-cover transition duration-500 ease-out group-hover:scale-[1.02] motion-reduce:group-hover:scale-100"
                   sizes="(max-width:1024px) 100vw, 58vw"
-                  priority
                 />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-[#e8e8ed] to-[#f5f5f7]" />

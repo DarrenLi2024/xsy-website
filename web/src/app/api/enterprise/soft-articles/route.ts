@@ -3,20 +3,37 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getEnterpriseFromRequest, enterpriseUnauthorized, ok, badRequest } from "@/lib/enterprise-api";
 
+const PAGE_SIZE = 20;
+
 export async function GET(req: NextRequest) {
   const user = await getEnterpriseFromRequest(req);
   if (!user || !user.companyId) return enterpriseUnauthorized();
 
-  const items = await prisma.softArticle.findMany({
-    where: { companyId: user.companyId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      channels: { include: { channel: true } },
-      _count: { select: { metrics: true } },
-    },
-  });
+  const url = new URL(req.url);
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
 
-  return ok({ items, total: items.length });
+  const where = { companyId: user.companyId };
+
+  const [items, total] = await Promise.all([
+    prisma.softArticle.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        channels: { include: { channel: true } },
+        _count: { select: { metrics: true } },
+      },
+    }),
+    prisma.softArticle.count({ where }),
+  ]);
+
+  return ok({
+    items,
+    total,
+    page,
+    totalPages: Math.ceil(total / PAGE_SIZE),
+  });
 }
 
 const createSchema = z.object({

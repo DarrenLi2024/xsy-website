@@ -2,41 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { ArticleStatus, CompanyStatus, JobStatus } from "@prisma/client";
+import { getApprovedCompanyBySlug } from "@/lib/data/public-detail";
 import { safeQuery } from "@/lib/data/safe-query";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const c = await prisma.company.findFirst({
-    where: { slug, status: CompanyStatus.APPROVED, deletedAt: null },
-    select: { name: true, description: true },
-  });
+  const c = await getApprovedCompanyBySlug(slug);
   if (!c) return { title: "企业未找到" };
   return { title: c.name, description: c.description ?? undefined };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function CompanyDetailPage({ params }: Props) {
   const { slug } = await params;
   const company = await safeQuery(
-    () =>
-      prisma.company.findFirst({
-        where: { slug, status: CompanyStatus.APPROVED, deletedAt: null },
-        include: {
-          products: { orderBy: { sort: "asc" }, take: 12 },
-          articles: {
-            where: { status: ArticleStatus.PUBLISHED, deletedAt: null },
-            orderBy: { publishedAt: "desc" },
-            take: 6,
-            select: { slug: true, title: true, publishedAt: true },
-          },
-          jobs: { where: { status: JobStatus.PUBLISHED }, take: 8 },
-        },
-      }),
+    () => getApprovedCompanyBySlug(slug),
     null,
     "CompanyDetailPage",
   );

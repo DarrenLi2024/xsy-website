@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { EventStatus } from "@prisma/client";
+import { getPublicEventsList } from "@/lib/data/public-lists";
 import { formatDateZh } from "@/lib/format-date";
 import { safeQuery } from "@/lib/data/safe-query";
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
   description: "峰会、沙龙与线上活动。",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const typeLabels: Record<string, string> = {
   EXHIBITION: "展会",
@@ -24,12 +23,7 @@ const typeLabels: Record<string, string> = {
 
 export default async function EventsPage() {
   const events = await safeQuery(
-    () =>
-      prisma.event.findMany({
-        where: { status: { in: [EventStatus.UPCOMING, EventStatus.ONGOING] } },
-        orderBy: { startDate: "asc" },
-        take: 40,
-      }),
+    () => getPublicEventsList(),
     [],
     "EventsPage",
   );

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminFromRequest(req);
@@ -56,6 +57,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data,
   });
 
+  invalidatePublicContentCaches();
   return ok(section);
 }
 
@@ -69,5 +71,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   await prisma.pageSection.delete({ where: { id } });
 
+  invalidatePublicContentCaches();
   return ok({ deleted: true });
 }

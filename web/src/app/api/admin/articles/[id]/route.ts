@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminFromRequest(req);
@@ -53,6 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: updateData as Prisma.ArticleUpdateInput,
   });
 
+  invalidatePublicContentCaches();
   return ok(article);
 }
 
@@ -69,5 +71,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     data: { deletedAt: new Date() },
   });
 
+  invalidatePublicContentCaches();
   return ok({ deleted: true });
 }

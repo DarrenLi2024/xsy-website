@@ -1,27 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getPublishedJobById } from "@/lib/data/public-detail";
 import { safeQuery } from "@/lib/data/safe-query";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const j = await prisma.job.findUnique({ where: { id }, select: { title: true } });
+  const j = await getPublishedJobById(id);
   return { title: j?.title ?? "职位" };
 }
 
 export default async function JobDetailPage({ params }: Props) {
   const { id } = await params;
   const job = await safeQuery(
-    () =>
-      prisma.job.findUnique({
-        where: { id },
-        include: { company: { select: { name: true, slug: true } } },
-      }),
+    () => getPublishedJobById(id),
     null,
     "JobDetailPage",
   );

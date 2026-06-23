@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "硬核芯等品牌评选活动。",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function AwardsPage() {
   const campaigns = await safeQuery(

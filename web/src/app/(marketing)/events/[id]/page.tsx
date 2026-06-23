@@ -3,28 +3,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, MapPin } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { getEventById } from "@/lib/data/public-detail";
 import { formatDateZh } from "@/lib/format-date";
 import { safeQuery } from "@/lib/data/safe-query";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const e = await prisma.event.findUnique({ where: { id }, select: { title: true } });
+  const e = await getEventById(id);
   return { title: e?.title ?? "活动" };
 }
 
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
   const event = await safeQuery(
-    () =>
-      prisma.event.findUnique({
-        where: { id },
-        include: { company: { select: { name: true, slug: true } } },
-      }),
+    () => getEventById(id),
     null,
     "EventDetailPage",
   );

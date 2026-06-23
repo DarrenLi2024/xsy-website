@@ -99,6 +99,7 @@ export async function POST(req: Request) {
     role: user.role,
     email: user.email,
     adminRole: null,
+    companyId: user.companyId,
   });
 
   const res = NextResponse.json({

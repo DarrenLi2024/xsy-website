@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { prisma } from "@/lib/prisma";
-import { CompanyStatus } from "@prisma/client";
+import { getPublicCompaniesList } from "@/lib/data/public-lists";
 import { safeQuery } from "@/lib/data/safe-query";
 
 export const metadata: Metadata = {
@@ -10,23 +9,11 @@ export const metadata: Metadata = {
   description: "半导体企业名录与品牌主页。",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function CompaniesPage() {
   const companies = await safeQuery(
-    () =>
-      prisma.company.findMany({
-        where: { status: CompanyStatus.APPROVED, deletedAt: null },
-        orderBy: { name: "asc" },
-        select: {
-          slug: true,
-          name: true,
-          logo: true,
-          industry: true,
-          city: true,
-          description: true,
-        },
-      }),
+    () => getPublicCompaniesList(),
     [],
     "CompaniesPage",
   );

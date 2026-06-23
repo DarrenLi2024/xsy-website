@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -19,10 +20,11 @@ export type EnterpriseUser = {
     scale: string | null;
     city: string | null;
     status: string;
+    socialLinks: unknown | null;
   } | null;
 };
 
-export async function getEnterpriseUser(): Promise<EnterpriseUser | null> {
+export const getEnterpriseUser = cache(async (): Promise<EnterpriseUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   const session = await verifySessionToken(token);
@@ -48,13 +50,14 @@ export async function getEnterpriseUser(): Promise<EnterpriseUser | null> {
           scale: true,
           city: true,
           status: true,
+          socialLinks: true,
         },
       },
     },
   });
   if (!user) return null;
   return user as unknown as EnterpriseUser;
-}
+});
 
 export async function requireEnterprise(): Promise<EnterpriseUser> {
   const user = await getEnterpriseUser();

@@ -2,23 +2,23 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getReportById } from "@/lib/data/public-detail";
 import { safeQuery } from "@/lib/data/safe-query";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const r = await prisma.report.findUnique({ where: { id }, select: { title: true } });
+  const r = await getReportById(id);
   return { title: r?.title ?? "报告" };
 }
 
 export default async function ReportDetailPage({ params }: Props) {
   const { id } = await params;
   const report = await safeQuery(
-    () => prisma.report.findUnique({ where: { id } }),
+    () => getReportById(id),
     null,
     "ReportDetailPage",
   );

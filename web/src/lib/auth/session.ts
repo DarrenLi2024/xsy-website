@@ -32,6 +32,7 @@ export type SessionPayload = {
   role: UserRole;
   email: string;
   adminRole?: AdminRole | null;
+  companyId?: string | null;
 };
 
 export async function signSessionToken(payload: SessionPayload, maxAgeSec = DAY * 7) {
@@ -39,6 +40,7 @@ export async function signSessionToken(payload: SessionPayload, maxAgeSec = DAY 
     role: payload.role,
     email: payload.email,
     adminRole: payload.adminRole,
+    companyId: payload.companyId ?? null,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
@@ -54,8 +56,9 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
     const role = payload.role as UserRole | undefined;
     const email = payload.email as string | undefined;
     const adminRole = payload.adminRole as AdminRole | undefined;
+    const companyId = payload.companyId as string | null | undefined;
     if (!sub || !role || !email) return null;
-    return { sub, role, email, adminRole };
+    return { sub, role, email, adminRole, companyId: companyId ?? null };
   } catch {
     return null;
   }

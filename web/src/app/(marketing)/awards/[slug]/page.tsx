@@ -1,31 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getAwardCampaignBySlug } from "@/lib/data/public-detail";
 import VoteWidget from "@/components/vote-widget";
 import { safeQuery } from "@/lib/data/safe-query";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const c = await prisma.awardCampaign.findUnique({
-    where: { slug },
-    select: { title: true },
-  });
+  const c = await getAwardCampaignBySlug(slug);
   return { title: c?.title ?? "评选" };
 }
 
 export default async function AwardDetailPage({ params }: Props) {
   const { slug } = await params;
   const campaign = await safeQuery(
-    () =>
-      prisma.awardCampaign.findUnique({
-        where: { slug },
-        include: { _count: { select: { votes: true } } },
-      }),
+    () => getAwardCampaignBySlug(slug),
     null,
     "AwardDetailPage",
   );

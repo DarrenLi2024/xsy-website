@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "半导体产业深度文章与动态。",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type Props = {
   searchParams: Promise<{ category?: string }>;

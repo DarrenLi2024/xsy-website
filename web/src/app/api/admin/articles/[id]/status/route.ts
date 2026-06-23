@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 const schema = z.object({
   status: z.enum(["DRAFT", "PENDING_REVIEW", "APPROVED", "REJECTED", "PUBLISHED", "ARCHIVED"]),
@@ -26,5 +27,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const article = await prisma.article.update({ where: { id }, data });
+  invalidatePublicContentCaches();
   return ok(article);
 }

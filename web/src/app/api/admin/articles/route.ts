@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ArticleStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminFromRequest, unauthorized, ok, created, badRequest } from "@/lib/admin-api";
+import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 const PAGE_SIZE = 20;
 
@@ -96,5 +97,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  invalidatePublicContentCaches();
   return created(article);
 }

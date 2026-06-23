@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
+import { getPublishedArticleBySlug } from "@/lib/data/public-detail";
 import { formatDateZh } from "@/lib/format-date";
 import { safeQuery } from "@/lib/data/safe-query";
 
@@ -13,10 +14,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const article = await prisma.article.findFirst({
-    where: { slug, status: ArticleStatus.PUBLISHED, deletedAt: null },
-    select: { title: true, summary: true },
-  });
+  const article = await getPublishedArticleBySlug(slug);
   if (!article) return { title: "文章未找到" };
   return {
     title: article.title,
@@ -24,16 +22,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ArticleDetailPage({ params }: Props) {
   const { slug } = await params;
   const article = await safeQuery(
-    () =>
-      prisma.article.findFirst({
-        where: { slug, status: ArticleStatus.PUBLISHED, deletedAt: null },
-        include: { company: { select: { name: true, slug: true } } },
-      }),
+    () => getPublishedArticleBySlug(slug),
     null,
     "ArticleDetailPage",
   );

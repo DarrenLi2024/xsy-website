@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
 
 export type EnterpriseApiUser = {
   id: string;
@@ -13,15 +12,14 @@ export async function getEnterpriseFromRequest(req: Request): Promise<Enterprise
   const cookieHeader = req.headers.get("cookie") || "";
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
   if (!match) return null;
-  const token = match[1];
-  const session = await verifySessionToken(token);
+  const session = await verifySessionToken(match[1]);
   if (!session || (session.role !== "ENTERPRISE" && session.role !== "ADMIN")) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.sub },
-    select: { id: true, email: true, role: true, companyId: true },
-  });
-  if (!user) return null;
-  return user as EnterpriseApiUser;
+  return {
+    id: session.sub,
+    email: session.email,
+    role: session.role as "ENTERPRISE" | "ADMIN",
+    companyId: session.companyId ?? null,
+  };
 }
 
 export function unauthorized() {

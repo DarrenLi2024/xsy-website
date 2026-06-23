@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { JobStatus } from "@prisma/client";
+import { getPublicJobsList } from "@/lib/data/public-lists";
 import { safeQuery } from "@/lib/data/safe-query";
 
 export const metadata: Metadata = {
@@ -9,17 +8,11 @@ export const metadata: Metadata = {
   description: "半导体企业招聘职位。",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function JobsPage() {
   const jobs = await safeQuery(
-    () =>
-      prisma.job.findMany({
-        where: { status: JobStatus.PUBLISHED },
-        orderBy: { createdAt: "desc" },
-        include: { company: { select: { name: true, slug: true } } },
-        take: 50,
-      }),
+    () => getPublicJobsList(),
     [],
     "JobsPage",
   );

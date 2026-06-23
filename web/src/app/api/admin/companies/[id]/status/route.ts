@@ -9,6 +9,7 @@ import {
   notFound,
   badRequest,
 } from "@/lib/admin-api";
+import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 const statusSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED", "SUSPENDED"]),
@@ -55,5 +56,6 @@ export async function PUT(
     },
   });
 
+  invalidatePublicContentCaches();
   return ok({ ...company, status });
 }
