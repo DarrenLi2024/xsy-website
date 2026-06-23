@@ -44,7 +44,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "邮箱或密码错误" }, { status: 401 });
   }
 
-  const target = redirect && isSafeRedirect(redirect) ? redirect : "/";
+  const target =
+    redirect && isSafeRedirect(redirect)
+      ? redirect
+      : user.role === "ADMIN"
+        ? "/admin/dashboard"
+        : user.role === "ENTERPRISE"
+          ? "/enterprise/dashboard"
+          : "/";
   if (target.startsWith("/admin") && user.role !== "ADMIN") {
     return NextResponse.json({ error: "无权进入运营后台" }, { status: 403 });
   }

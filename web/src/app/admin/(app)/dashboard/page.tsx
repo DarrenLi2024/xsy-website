@@ -1,20 +1,17 @@
-import { prisma } from "@/lib/prisma";
-import { getAdminUser } from "@/lib/admin-auth";
-import { ArticleStatus, CompanyStatus } from "@prisma/client";
+import { getAdminDashboardStats } from "@/lib/data/admin-dashboard";
 import StatsCard from "@/components/admin/stats-card";
-import { ArticleTrendChart, CompanyTrendChart, IndustryDistributionChart, ContentStatusChart } from "@/components/admin/charts";
+import {
+  ArticleTrendChart,
+  CompanyTrendChart,
+  IndustryDistributionChart,
+  ContentStatusChart,
+} from "@/components/admin/charts";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function AdminDashboardPage() {
-  const user = await getAdminUser();
-  if (!user) return null;
-
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const [
+  const {
     totalArticles,
     totalCompanies,
     pendingCompanies,
@@ -26,27 +23,13 @@ export default async function AdminDashboardPage() {
     totalJobs,
     totalAds,
     monthArticles,
-  ] = await Promise.all([
-    prisma.article.count({ where: { deletedAt: null } }),
-    prisma.company.count({ where: { deletedAt: null } }),
-    prisma.company.count({ where: { status: CompanyStatus.PENDING, deletedAt: null } }),
-    prisma.article.count({ where: { status: ArticleStatus.DRAFT } }),
-    prisma.article.count({ where: { status: ArticleStatus.PENDING_REVIEW } }),
-    prisma.event.count(),
-    prisma.report.count(),
-    prisma.user.count(),
-    prisma.job.count({ where: { status: "PUBLISHED" } }),
-    prisma.ad.count({ where: { active: true } }),
-    prisma.article.count({ where: { publishedAt: { gte: monthStart }, deletedAt: null } }),
-  ]);
+  } = await getAdminDashboardStats();
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">运营控制台</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          欢迎回来，{user.name || user.email}
-        </p>
+        <p className="mt-1 text-sm text-slate-400">数据概览与待办事项</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -87,7 +70,7 @@ export default async function AdminDashboardPage() {
                 href="/admin/companies"
                 className="flex items-center gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-5 py-3 transition-colors hover:bg-yellow-500/10"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/10 text-yellow-400 text-sm font-bold">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/10 text-sm font-bold text-yellow-400">
                   {pendingCompanies}
                 </div>
                 <div>
@@ -101,7 +84,7 @@ export default async function AdminDashboardPage() {
                 href="/admin/articles"
                 className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-5 py-3 transition-colors hover:bg-blue-500/10"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 text-sm font-bold">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-sm font-bold text-blue-400">
                   {pendingReviewArticles}
                 </div>
                 <div>
