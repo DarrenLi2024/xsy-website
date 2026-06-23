@@ -43,13 +43,27 @@ export function HomeHero({ stats, slides }: Props) {
           />
         </div>
       ) : null}
-      {/* Overlay */}
+      {/* Overlay — 左侧压暗保文字可读 */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/22 to-transparent md:from-black/48 md:via-black/12"
+        className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/28 to-black/5 md:from-black/52 md:via-black/14"
+        aria-hidden
+      />
+      {/* 底部深色多彩渐变，替代原先过曝的白色蒙板 */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#050810] via-[#0c1222]/82 to-transparent"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[52%] bg-gradient-to-t from-[#fbfbfd] via-[#fbfbfd]/88 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-cyan-950/45 via-indigo-950/28 to-transparent mix-blend-soft-light"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-violet-950/30 via-transparent to-transparent"
+        aria-hidden
+      />
+      {/* 与下方统计栏的极短衔接，避免硬切 */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f5f5f7] to-transparent"
         aria-hidden
       />
 
