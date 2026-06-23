@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total": 50,
+    "byCategory": {
+      "admin": 35,
+      "enterprise": 10,
+      "auth": 3,
+      "public": 2
+    },
+    "byMethod": {
+      "GET": 43,
+      "POST": 21,
+      "PUT": 18,
+      "PATCH": 3,
+      "DELETE": 14
+    },
+    "issues": {
+      "todoComments": 1,
+      "minimalImpl": 1,
+      "returns501": 0,
+      "noErrorHandling": 0,
+      "inconsistentFormat": 1
+    },
+    "implementation": {
+      "withPrisma": 47,
+      "withTryCatch": 41,
+      "withAuth": 44,
+      "usesOkHelper": 45
+    }
+  },
+  "results": [
+    {
+      "path": "/api/admin/upload",
+      "category": "admin",
+      "methods": [
+        "POST"
+      ],
+      "issues": [
+        "Line 19: Contains TODO/FIXME comment"
+      ],
+      "stats": {
+        "hasPrisma": false,
+        "hasTryCatch": true,
+        "hasErrorReturn": false,
+        "hasNotFound": false,
+        "hasUnauthorized": true,
+        "hasOk": true,
+        "hasNextResponse": false,
+        "hasStatus500": false,
+        "hasStatus501": false,
+        "lines": 22
+      },
+      "formats": {
+        "usesOkHelper": true,
+        "usesErrorFormat": false,
+        "usesMessageFormat": false,
+        "directDataReturn": false
+      },
+      "file": "/admin/upload/route.ts"
+    },
+    {
+      "path": "/api/auth/logout",
+      "category": "auth",
+      "methods": [
+        "POST"
+      ],
+      "issues": [
+        "Possibly minimal implementation (only 15 lines)"
+      ],
+      "stats": {
+        "hasPrisma": false,
+        "hasTryCatch": false,
+        "hasErrorReturn": false,
+        "hasNotFound": false,
+        "hasUnauthorized": false,
+        "hasOk": false,
+        "hasNextResponse": true,
+        "hasStatus500": false,
+        "hasStatus501": false,
+        "lines": 15
+      },
+      "formats": {
+        "usesOkHelper": false,
+        "usesErrorFormat": false,
+        "usesMessageFormat": false,
+        "directDataReturn": true
+      },
+      "file": "/auth/logout/route.ts"
+    }
+  ]
+}

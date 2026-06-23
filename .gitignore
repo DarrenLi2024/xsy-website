@@ -1,0 +1,6 @@
+.DS_Store
+web/node_modules/
+web/.next/
+web/.env
+web/.env.local
+web/*.tsbuildinfo

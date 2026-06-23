@@ -1,0 +1,44 @@
+name: xinshiye
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: xinshiye
+      POSTGRES_PASSWORD: xinshiye_dev
+      POSTGRES_DB: xinshiye
+    volumes:
+      - xinshiye_pg:/var/lib/postgresql/data
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: >
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xinshiye -d xinshiye"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - xinshiye_redis:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.14
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: xinshiye_search_master_key
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - xinshiye_meili:/meili_data
+
+volumes:
+  xinshiye_pg:
+  xinshiye_redis:
+  xinshiye_meili:

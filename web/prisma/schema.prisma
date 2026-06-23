@@ -1,0 +1,519 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ——— 用户与会话 ———
+
+enum UserRole {
+  USER
+  ADMIN
+  ENTERPRISE
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  CONTENT_EDITOR
+  BUSINESS_OPS
+  REVIEWER
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String?
+  role         UserRole   @default(USER)
+  adminRole    AdminRole?
+  companyId    String?
+  company      Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  sessions     Session[]
+
+  @@index([companyId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@index([userId])
+}
+
+// ——— 企业 ———
+
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Company {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  logo        String?
+  description String?
+  website     String?
+  industry    String?
+  scale       String?
+  city        String?
+  socialLinks Json?
+  status      CompanyStatus   @default(PENDING)
+  deletedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  products  Product[]
+  articles  Article[]
+  events    Event[]
+  jobs      Job[]
+  users     User[]
+  softArticles SoftArticle[]
+  awardVotes  AwardVote[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  category     String?
+  description  String?
+  parameters   Json?
+  images       Json?
+  datasheetUrl String?
+  status       CompanyStatus @default(APPROVED)
+  sort         Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// ——— 资讯 ———
+
+enum ArticleStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Article {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  summary     String?
+  content     String
+  coverImage  String?
+  category    String?
+  tags        String[]
+  author      String?
+  source      String?
+  companyId   String?
+  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  isFeatured  Boolean        @default(false)
+  viewCount   Int            @default(0)
+  status      ArticleStatus  @default(DRAFT)
+  publishedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([category])
+  @@index([slug])
+  @@index([companyId])
+  @@index([isFeatured, status])
+}
+
+// ——— 活动 ———
+
+enum EventType {
+  EXHIBITION
+  CONFERENCE
+  WEBINAR
+  SALON
+  WORKSHOP
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id                   String      @id @default(cuid())
+  companyId            String?
+  company              Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  title                String
+  description          String?
+  type                 EventType
+  startDate            DateTime
+  endDate              DateTime
+  location             String?
+  coverImage           String?
+  capacity             Int?
+  registrationDeadline DateTime?
+  status               EventStatus @default(UPCOMING)
+  isFeatured           Boolean     @default(false)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  registrations EventRegistration[]
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  position  String?
+  createdAt DateTime  @default(now())
+
+  @@index([eventId])
+}
+
+// ——— 招聘 ———
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  CONTRACT
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title        String
+  city         String?
+  type         JobType
+  experience   String?
+  education    String?
+  salaryMin    Int?
+  salaryMax    Int?
+  description  String
+  requirements String?
+  status       JobStatus @default(PUBLISHED)
+  viewCount    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  applications JobApplication[]
+
+  @@index([companyId, status])
+  @@index([type])
+  @@index([city])
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  INTERVIEWING
+  ACCEPTED
+  REJECTED
+}
+
+model JobApplication {
+  id          String             @id @default(cuid())
+  jobId       String
+  job         Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  phone       String?
+  resumeUrl   String?
+  coverLetter String?
+  status      ApplicationStatus  @default(PENDING)
+  createdAt   DateTime           @default(now())
+
+  @@index([jobId])
+  @@index([status])
+}
+
+// ——— 广告（首页位） ———
+
+model AdSlot {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  title     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ads       Ad[]
+}
+
+model Ad {
+  id           String    @id @default(cuid())
+  slotId       String
+  slot         AdSlot    @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  title        String
+  image        String?
+  link         String
+  sort         Int       @default(0)
+  impressions Int      @default(0)
+  clicks       Int      @default(0)
+  startDate    DateTime
+  endDate      DateTime
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([slotId, active])
+}
+
+// ——— 报告 ———
+
+enum ReportCategory {
+  INDUSTRY_TREND
+  MARKET_ANALYSIS
+  TECHNOLOGY_REVIEW
+  COMPANY_PROFILE
+  CUSTOM_REPORT
+}
+
+model Report {
+  id            String          @id @default(cuid())
+  title         String
+  description   String?
+  coverImage    String?
+  fileUrl       String?
+  price         Float?
+  category      ReportCategory?
+  tags          String[]
+  downloadCount Int             @default(0)
+  publishedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([publishedAt])
+}
+
+// ——— 评选（占位，可扩展投票） ———
+
+model AwardCampaign {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  summary     String?
+  year        Int
+  startDate   DateTime
+  endDate     DateTime
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  votes AwardVote[]
+
+  @@index([year, active])
+}
+
+model AwardVote {
+  id          String   @id @default(cuid())
+  campaignId  String
+  companyId   String?
+  ipHash      String
+  fingerprint String?
+  createdAt   DateTime @default(now())
+
+  campaign AwardCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  company  Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, ipHash])
+  @@index([campaignId])
+}
+
+// ——— 系统设置 ———
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ——— 页面板块管理 ———
+
+enum SectionType {
+  HERO_SLIDE
+  TOPIC_CARD
+  TESTIMONIAL
+  NAV_LINK
+  FOOTER_COLUMN
+  CTA_SECTION
+  TRENDING
+  ARTICLES_FEED
+  COMPANIES
+  EVENTS
+  REPORTS
+  AWARDS
+}
+
+model PageSection {
+  id        String          @id @default(cuid())
+  type      SectionType
+  code      String          @unique
+  title     String?
+  active    Boolean         @default(true)
+  sort      Int             @default(0)
+  settings  Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  items PageSectionItem[]
+
+  @@index([type, active])
+}
+
+model PageSectionItem {
+  id          String       @id @default(cuid())
+  sectionId   String
+  section     PageSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String?
+  subtitle    String?
+  description String?
+  image       String?
+  link        String?
+  linkText    String?
+  sort        Int          @default(0)
+  active      Boolean      @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  extra       Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([sectionId, sort])
+}
+
+// ——— 操作审计日志 ———
+
+enum SoftArticleStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaChannelType {
+  WECHAT_MP
+  TOUTIAO
+  ZHIHU
+  WEIBO
+  LINKEDIN
+  BILIBILI
+  WEBSITE
+  OTHER
+}
+
+model MediaChannel {
+  id          String             @id @default(cuid())
+  name        String
+  type        MediaChannelType   @default(OTHER)
+  url         String?
+  description String?
+  active      Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  articles    SoftArticleChannel[]
+}
+
+model SoftArticle {
+  id           String              @id @default(cuid())
+  companyId    String
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title        String
+  content      String
+  summary      String?
+  coverImage   String?
+  author       String?
+  seoKeywords  String?
+  status       SoftArticleStatus   @default(DRAFT)
+  publishedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  channels     SoftArticleChannel[]
+  metrics      SoftArticleMetric[]
+
+  @@index([companyId, status])
+  @@index([status, publishedAt])
+}
+
+model SoftArticleChannel {
+  id            String        @id @default(cuid())
+  softArticleId String
+  softArticle   SoftArticle   @relation(fields: [softArticleId], references: [id], onDelete: Cascade)
+  channelId     String
+  channel       MediaChannel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  status        String        @default("pending")
+  publishedUrl  String?
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@unique([softArticleId, channelId])
+  @@index([channelId])
+}
+
+model SoftArticleMetric {
+  id            String      @id @default(cuid())
+  softArticleId String
+  softArticle   SoftArticle @relation(fields: [softArticleId], references: [id], onDelete: Cascade)
+  channel       String
+  views         Int         @default(0)
+  shares        Int         @default(0)
+  comments      Int         @default(0)
+  likes         Int         @default(0)
+  date          DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([softArticleId, channel, date])
+  @@index([softArticleId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userEmail  String?
+  action     String   // "CREATE_ARTICLE", "APPROVE_COMPANY", etc.
+  resource   String   // "Article", "Company", "Event"...
+  resourceId String?
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([resource, resourceId])
+}

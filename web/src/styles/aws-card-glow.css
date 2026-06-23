@@ -1,0 +1,157 @@
+/**
+ * AWS 风格卡片 — 周缘 conic 彩色辉光 + hover 抬升 + 多色阴影
+ * ---------------------------------------------------------------------------
+ * 可单独复制到任意项目（纯 CSS，无框架依赖）。需配合固定 DOM 结构使用。
+ *
+ * HTML 结构:
+ *   <div class="aws-card aws-card--light group">   (或 aws-card--dark)
+ *     <span class="aws-card__halo" aria-hidden="true"></span>
+ *     <div class="aws-card__surface">
+ *       …内容…
+ *     </div>
+ *   </div>
+ *
+ * 说明:
+ * - 外层 `.aws-card` 需与「子元素里用 group-hover:」的类同用（如 Tailwind 的 `group`）。
+ * - 光晕层在卡片外侧，内层面板请保留 `overflow: hidden` + 圆角，避免裁切光晕。
+ *
+ * 调参: 修改 `.aws-card` 上的 `--aws-card-halo-*` 等变量即可收拢/放宽辉光。
+ */
+
+/* ---- 全局可调 token（复制到新项目时主要改这里）---- */
+.aws-card {
+  --aws-card-radius: 1rem; /* 与 Tailwind rounded-2xl 对齐 */
+  --aws-card-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* 光晕层：外扩越小、blur 越小 = 越贴边 */
+  --aws-card-halo-outset: 4px;
+  --aws-card-halo-blur: 8px;
+  --aws-card-halo-opacity: 0.8;
+
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+}
+
+/* ---- 浅色预设（品红 → 粉 → 橙红）---- */
+.aws-card--light {
+  --aws-card-shadow-hover:
+    0 4px 14px rgba(217, 70, 239, 0.2),
+    0 1px 6px rgba(251, 113, 133, 0.14),
+    -3px 0 10px rgba(236, 72, 153, 0.11),
+    3px 0 10px rgba(249, 115, 22, 0.1),
+    0 -3px 8px rgba(244, 114, 182, 0.09),
+    0 1px 3px rgba(217, 70, 239, 0.08);
+}
+
+.aws-card--light .aws-card__halo {
+  background: conic-gradient(
+    from 215deg at 50% 50%,
+    #e879f9 0deg,
+    #f472b6 55deg,
+    #fb7185 110deg,
+    #f97316 175deg,
+    #fb7185 235deg,
+    #ec4899 295deg,
+    #d946ef 360deg
+  );
+}
+
+/* ---- 深色预设（紫 → 青 → 浅青 → 青绿 → 靛）---- */
+.aws-card--dark {
+  --aws-card-shadow-hover:
+    0 4px 14px rgba(147, 51, 234, 0.26),
+    0 1px 6px rgba(34, 211, 238, 0.2),
+    -3px 0 10px rgba(99, 102, 241, 0.15),
+    3px 0 10px rgba(20, 184, 166, 0.13),
+    0 -3px 8px rgba(34, 211, 238, 0.12),
+    0 1px 3px rgba(124, 58, 237, 0.1);
+}
+
+.aws-card--dark .aws-card__halo {
+  background: conic-gradient(
+    from 195deg at 50% 50%,
+    #a855f7 0deg,
+    #7c3aed 45deg,
+    #22d3ee 100deg,
+    #67e8f9 150deg,
+    #2dd4bf 210deg,
+    #6366f1 280deg,
+    #9333ea 360deg
+  );
+}
+
+/* ---- 光晕层（置于内层之下，blur 扩散）---- */
+.aws-card__halo {
+  pointer-events: none;
+  position: absolute;
+  inset: calc(-1 * var(--aws-card-halo-outset));
+  z-index: 0;
+  border-radius: calc(var(--aws-card-radius) + var(--aws-card-halo-outset));
+  opacity: 0;
+  filter: blur(var(--aws-card-halo-blur));
+  transition: opacity 0.4s var(--aws-card-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aws-card__halo {
+    transition: none;
+  }
+}
+
+.aws-card:hover .aws-card__halo {
+  opacity: var(--aws-card-halo-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aws-card:hover .aws-card__halo {
+    opacity: 0;
+  }
+}
+
+/* ---- 卡片面板 ---- */
+.aws-card__surface {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 0;
+  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--aws-card-radius);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  transition:
+    transform 0.3s var(--aws-card-ease),
+    border-color 0.3s var(--aws-card-ease),
+    box-shadow 0.3s var(--aws-card-ease);
+}
+
+.aws-card:hover .aws-card__surface {
+  transform: translateY(-4px);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: var(--aws-card-shadow-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aws-card:hover .aws-card__surface {
+    transform: none;
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: none;
+  }
+
+  .aws-card__surface {
+    transition: none;
+  }
+}
+
+.aws-card__surface:focus-visible {
+  outline: 2px solid var(--accent, #0071e3);
+  outline-offset: 2px;
+}
+
+/* 与 CardGlow / CardShine 叠层：非 data-card-effect 子元素抬高 */
+.aws-card__surface--glow-stack > :not([data-card-effect]) {
+  position: relative;
+  z-index: 2;
+}
