@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     template: "%s | 芯师爷",
   },
   description: `${SITE_TAGLINE}。深度内容、企业品牌、活动与白皮书，服务中国集成电路产业关键决策者。`,
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     type: "website",
     locale: "zh_CN",
