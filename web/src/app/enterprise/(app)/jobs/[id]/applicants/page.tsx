@@ -10,15 +10,17 @@ export default async function JobApplicantsPage(props: { params: Promise<{ id: s
   const user = await getEnterpriseUser();
   if (!user || !user.companyId) return null;
 
-  const job = await prisma.job.findFirst({
-    where: { id, companyId: user.companyId },
-  });
+  // 并行验证职位所属权 + 获取应聘者列表
+  const [job, applicants] = await Promise.all([
+    prisma.job.findFirst({
+      where: { id, companyId: user.companyId },
+    }),
+    prisma.jobApplication.findMany({
+      where: { jobId: id },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
   if (!job) notFound();
-
-  const applicants = await prisma.jobApplication.findMany({
-    where: { jobId: id },
-    orderBy: { createdAt: "desc" },
-  });
 
   const statusLabels: Record<string, string> = {
     PENDING: "待处理", REVIEWED: "已查看", INTERVIEWING: "面试中", ACCEPTED: "已录用", REJECTED: "已婉拒",

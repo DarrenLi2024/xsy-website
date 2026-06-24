@@ -49,8 +49,7 @@ export default function EnterpriseArticlesPage() {
   }, [page]);
 
   useEffect(() => {
-    const timer = setTimeout(() => void fetchArticles(), 0);
-    return () => clearTimeout(timer);
+    void fetchArticles();
   }, [fetchArticles]);
 
   const items = data?.items ?? [];

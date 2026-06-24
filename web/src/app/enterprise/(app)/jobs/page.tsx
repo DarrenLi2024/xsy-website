@@ -50,8 +50,7 @@ export default function EnterpriseJobsPage() {
   }, [page, status]);
 
   useEffect(() => {
-    const timer = setTimeout(() => void fetchJobs(), 0);
-    return () => clearTimeout(timer);
+    void fetchJobs();
   }, [fetchJobs]);
 
   const items = data?.items ?? [];
