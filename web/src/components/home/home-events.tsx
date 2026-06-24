@@ -51,7 +51,7 @@ export function HomeEvents({ events }: Props) {
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {events.map((e) => (
             <Link key={e.id} href={`/events/${e.id}`}>
-                <CardRoot className="bg-white">
+              <CardRoot className="bg-white">
                   {e.coverImage ? (
                     <CardImage>
                       <div className="relative aspect-[16/9] w-full bg-[#f5f5f7]">
@@ -90,7 +90,7 @@ export function HomeEvents({ events }: Props) {
                 </CardRoot>
               </Link>
             ))
-          )}
+          }
         </div>
       </div>
     </section>

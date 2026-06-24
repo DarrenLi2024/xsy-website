@@ -6,6 +6,7 @@ import type { AdminRole } from "@prisma/client";
 export type AdminApiUser = {
   id: string;
   email: string;
+  name: string | null;
   role: "ADMIN";
   adminRole: AdminRole | null;
 };
@@ -17,7 +18,7 @@ export async function getAdminFromRequest(req: Request): Promise<AdminApiUser | 
   const session = await verifySessionToken(match[1]);
   if (!session || session.role !== "ADMIN") return null;
   const user: AdminUser = adminUserFromSession(session);
-  return { id: user.id, email: user.email, role: user.role, adminRole: user.adminRole };
+  return { id: user.id, email: user.email, name: user.name, role: user.role, adminRole: user.adminRole };
 }
 
 export function unauthorized() {

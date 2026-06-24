@@ -42,7 +42,7 @@ export default async function ArticlesPage({ searchParams }: Props) {
         },
       }),
     [],
-    "ArticlesPage",
+    `articles-list${filter ? `:${filter}` : ""}`,
   );
 
   return (

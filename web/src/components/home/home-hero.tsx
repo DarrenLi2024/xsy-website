@@ -107,7 +107,7 @@ export function HomeHero({ stats, slides }: Props) {
           {/* Carousel indicators */}
           {slides.length > 1 && (
             <div className="mt-8 flex gap-2">
-              {slides.map((_, i) => (
+              {slides.map((_slide: unknown, i: number) => (
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
