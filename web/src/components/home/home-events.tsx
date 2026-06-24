@@ -49,11 +49,8 @@ export function HomeEvents({ events }: Props) {
           </Link>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {events.length === 0 ? (
-            <p className="text-[15px] text-[#6e6e73]">暂无近期活动。</p>
-          ) : (
-            events.map((e) => (
-              <Link key={e.id} href={`/events/${e.id}`}>
+          {events.map((e) => (
+            <Link key={e.id} href={`/events/${e.id}`}>
                 <CardRoot className="bg-white">
                   {e.coverImage ? (
                     <CardImage>

@@ -1,13 +1,15 @@
 import { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 const PAGE_SIZE = 30;
 
 export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "log:read"); } catch { return forbidden(); }
 
   const url = new URL(req.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));

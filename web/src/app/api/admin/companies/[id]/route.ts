@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, notFound, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 export async function GET(
   req: NextRequest,
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:read"); } catch { return forbidden(); }
 
   const { id } = await params;
   const company = await prisma.company.findUnique({
@@ -38,6 +40,7 @@ export async function PUT(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:write"); } catch { return forbidden(); }
 
   const { id } = await params;
   const existing = await prisma.company.findUnique({ where: { id } });
@@ -85,6 +88,7 @@ export async function DELETE(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:write"); } catch { return forbidden(); }
 
   const { id } = await params;
   const existing = await prisma.company.findUnique({ where: { id } });

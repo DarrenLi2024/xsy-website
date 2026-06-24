@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, created, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, created, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "page:read"); } catch { return forbidden(); }
 
   const items = await prisma.mediaChannel.findMany({
     orderBy: { createdAt: "desc" },
@@ -26,6 +28,7 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "page:write"); } catch { return forbidden(); }
 
   const json = await req.json().catch(() => null);
   if (!json) return badRequest("Invalid JSON");

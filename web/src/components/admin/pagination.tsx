@@ -21,10 +21,11 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-center gap-1 pt-6">
+    <nav aria-label="分页导航" className="flex items-center justify-center gap-1 pt-6">
       {currentPage > 1 && (
         <Link
           href={`${basePath}?page=${currentPage - 1}`}
+          rel="prev"
           className="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
         >
           上一页
@@ -32,13 +33,14 @@ export default function Pagination({
       )}
       {pages.map((p, i) =>
         p === "..." ? (
-          <span key={`ellipsis-${i}`} className="px-2 text-slate-600">
+          <span key={`ellipsis-${i}`} className="px-2 text-slate-600" aria-hidden>
             ...
           </span>
         ) : (
           <Link
             key={p}
             href={`${basePath}?page=${p}`}
+            aria-current={p === currentPage ? "page" : undefined}
             className={`rounded-lg px-3 py-1.5 text-sm ${
               p === currentPage
                 ? "bg-white/10 text-white"
@@ -52,11 +54,12 @@ export default function Pagination({
       {currentPage < totalPages && (
         <Link
           href={`${basePath}?page=${currentPage + 1}`}
+          rel="next"
           className="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
         >
           下一页
         </Link>
       )}
-    </div>
+    </nav>
   );
 }

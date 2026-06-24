@@ -2,13 +2,15 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, created, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, created, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 const PAGE_SIZE = 20;
 
 export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "product:read"); } catch { return forbidden(); }
 
   const url = new URL(req.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
@@ -54,6 +56,7 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "product:write"); } catch { return forbidden(); }
 
   const json = await req.json().catch(() => null);
   if (!json) return badRequest("Invalid JSON");

@@ -13,7 +13,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-busy="true" aria-label="内容加载中" role="status">
       <div className="flex gap-4 pb-3">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />

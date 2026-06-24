@@ -2,11 +2,13 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, notFound, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "user:read"); } catch { return forbidden(); }
 
   const { id } = await params;
   const user = await prisma.user.findUnique({
@@ -38,6 +40,7 @@ const updateSchema = z.object({
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "user:write"); } catch { return forbidden(); }
 
   const { id } = await params;
   const existing = await prisma.user.findUnique({ where: { id } });
@@ -82,6 +85,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "user:write"); } catch { return forbidden(); }
 
   const { id } = await params;
   const existing = await prisma.user.findUnique({ where: { id } });

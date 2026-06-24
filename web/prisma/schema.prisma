@@ -179,6 +179,8 @@ model Event {
 
   @@index([companyId])
   @@index([status])
+  @@index([status, endDate])
+  @@index([status, startDate])
 }
 
 model EventRegistration {
@@ -288,6 +290,7 @@ model Ad {
   updatedAt    DateTime  @updatedAt
 
   @@index([slotId, active])
+  @@index([slotId, active, startDate, endDate])
 }
 
 // ——— 报告 ———

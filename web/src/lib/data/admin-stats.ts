@@ -35,7 +35,7 @@ async function fetchAdminChartStats(): Promise<AdminChartStats> {
   rangeStart.setHours(0, 0, 0, 0);
 
   const [articleRows, companyRows, eventRows, industries, articleStatuses, companyStatuses] =
-    await Promise.all([
+    await Promise.allSettled([
       prisma.$queryRaw<{ month: string; count: number }[]>`
         SELECT to_char(date_trunc('month', "publishedAt"), 'YYYY-MM') AS month,
                COUNT(*)::int AS count
@@ -82,13 +82,17 @@ async function fetchAdminChartStats(): Promise<AdminChartStats> {
       }),
     ]);
 
+  function settle<T>(result: PromiseSettledResult<T>, fallback: T): T {
+    return result.status === "fulfilled" ? result.value : fallback;
+  }
+
   return {
-    articleTrend: fillTrend(labels, articleRows),
-    companyTrend: fillTrend(labels, companyRows),
-    eventTrend: fillTrend(labels, eventRows),
-    industries: industries.map((i) => ({ name: i.industry || "未分类", count: i._count.id })),
-    articleStatuses: articleStatuses.map((s) => ({ status: s.status, count: s._count.id })),
-    companyStatuses: companyStatuses.map((s) => ({ status: s.status, count: s._count.id })),
+    articleTrend: fillTrend(labels, settle(articleRows, [] as { month: string; count: number }[])),
+    companyTrend: fillTrend(labels, settle(companyRows, [] as { month: string; count: number }[])),
+    eventTrend: fillTrend(labels, settle(eventRows, [] as { month: string; count: number }[])),
+    industries: settle(industries, []).map((i: { industry: string | null; _count: { id: number } }) => ({ name: i.industry || "未分类", count: i._count.id })),
+    articleStatuses: settle(articleStatuses, []).map((s: { status: string; _count: { id: number } }) => ({ status: s.status, count: s._count.id })),
+    companyStatuses: settle(companyStatuses, []).map((s: { status: string; _count: { id: number } }) => ({ status: s.status, count: s._count.id })),
   };
 }
 

@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { slugify } from "@/lib/slugify";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE_NAME, signSessionToken } from "@/lib/auth/session";
 import type { UserRole } from "@prisma/client";
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 const registerSchema = z.object({
   companyName: z.string().min(2, "企业名称至少 2 个字符"),

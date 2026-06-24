@@ -5,10 +5,12 @@ import { prisma } from "@/lib/prisma";
 import {
   getAdminFromRequest,
   unauthorized,
+  forbidden,
   ok,
   notFound,
   badRequest,
 } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 import { invalidatePublicContentCaches } from "@/lib/revalidate";
 
 const statusSchema = z.object({
@@ -22,6 +24,7 @@ export async function PUT(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:review"); } catch { return forbidden(); }
 
   const { id } = await params;
   const existing = await prisma.company.findUnique({ where: { id } });

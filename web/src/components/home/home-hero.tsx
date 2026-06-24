@@ -31,10 +31,10 @@ export function HomeHero({ stats, slides }: Props) {
   return (
     <section id="section-hero" className="relative overflow-hidden bg-black">
       {/* Background image carousel */}
-      {hasSlides ? (
+      {hasSlides && slide.image ? (
         <div className="absolute inset-0 transition-opacity duration-700">
           <Image
-            src={slide.image || ""}
+            src={slide.image}
             alt={slide.subtitle || ""}
             fill
             priority

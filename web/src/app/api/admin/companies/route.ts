@@ -2,13 +2,16 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { CompanyStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, created, badRequest } from "@/lib/admin-api";
+import { slugify } from "@/lib/slugify";
+import { getAdminFromRequest, unauthorized, forbidden, ok, created, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 const PAGE_SIZE = 20;
 
 export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:read"); } catch { return forbidden(); }
 
   const url = new URL(req.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
@@ -47,13 +50,6 @@ export async function GET(req: NextRequest) {
   });
 }
 
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 const createSchema = z.object({
   name: z.string().min(1, "企业名称不能为空"),
   logo: z.string().optional().nullable(),
@@ -68,6 +64,7 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "company:write"); } catch { return forbidden(); }
 
   const json = await req.json().catch(() => null);
   if (!json) return badRequest("Invalid JSON");

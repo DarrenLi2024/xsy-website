@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ApplicationStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, notFound, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, notFound, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 const PAGE_SIZE = 50;
 
@@ -12,6 +13,7 @@ export async function GET(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "job:read"); } catch { return forbidden(); }
 
   const { id } = await params;
 
@@ -52,6 +54,7 @@ const updateStatusSchema = z.object({
 export async function PATCH(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "job:write"); } catch { return forbidden(); }
 
   const url = new URL(req.url);
   const applicationId = url.searchParams.get("applicationId");

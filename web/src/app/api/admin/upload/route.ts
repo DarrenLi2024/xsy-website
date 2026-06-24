@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminFromRequest, unauthorized, ok, badRequest, serverError } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, badRequest, serverError } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -28,6 +29,7 @@ function sanitizeFilename(name: string): string {
 export async function POST(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "page:write"); } catch { return forbidden(); }
 
   let formData: FormData;
   try {
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "page:write"); } catch { return forbidden(); }
 
   const json = await req.json().catch(() => null);
   if (!json) return badRequest("Invalid JSON");

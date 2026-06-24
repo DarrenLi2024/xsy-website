@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, badRequest } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, badRequest } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 import type { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "settings:read"); } catch { return forbidden(); }
 
   const settings = await prisma.setting.findMany();
   const map: Record<string, unknown> = {};
@@ -22,6 +24,7 @@ const upsertSchema = z.record(z.string(), z.unknown());
 export async function PUT(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "settings:write"); } catch { return forbidden(); }
 
   const json = await req.json().catch(() => null);
   if (!json) return badRequest("Invalid JSON");

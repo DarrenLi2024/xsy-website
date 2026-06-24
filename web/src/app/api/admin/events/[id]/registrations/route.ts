@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromRequest, unauthorized, ok, notFound } from "@/lib/admin-api";
+import { getAdminFromRequest, unauthorized, forbidden, ok, notFound } from "@/lib/admin-api";
+import { checkPermitOrDeny } from "@/lib/admin-auth";
 
 const PAGE_SIZE = 50;
 
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return unauthorized();
+  try { checkPermitOrDeny(admin, "event:read"); } catch { return forbidden(); }
 
   const { id } = await params;
 
