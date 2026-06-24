@@ -47,10 +47,7 @@ export default function AdminProductsPage() {
   }, [q, page]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchProducts();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchProducts();
   }, [fetchProducts]);
 
   const columns: Column<(typeof data.items)[number]>[] = [

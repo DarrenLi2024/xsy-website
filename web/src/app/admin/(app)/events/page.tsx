@@ -64,10 +64,7 @@ export default function AdminEventsPage() {
   }, [page, q, type, status, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchEvents();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchEvents();
   }, [fetchEvents]);
 
   const typeLabels: Record<string, string> = {

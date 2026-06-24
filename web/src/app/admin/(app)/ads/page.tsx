@@ -45,10 +45,7 @@ export default function AdminAdsPage() {
   }, [searchParams, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchSlots();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchSlots();
   }, [fetchSlots]);
 
   const columns: Column<AdSlot>[] = [

@@ -68,10 +68,7 @@ export default function EventRegistrationsPage() {
   }, [id, searchParams, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchData();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchData();
   }, [fetchData]);
 
   const columns: Column<Registration>[] = [

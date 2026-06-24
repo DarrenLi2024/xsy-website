@@ -1,4 +1,5 @@
-import { getEnterpriseUser } from "@/lib/enterprise-auth";
+import { Suspense } from "react";
+import { getEnterpriseUser, type EnterpriseUser } from "@/lib/enterprise-auth";
 import { prisma } from "@/lib/prisma";
 import StatsCard from "@/components/admin/stats-card";
 import Link from "next/link";
@@ -11,18 +12,6 @@ export default async function EnterpriseDashboardPage() {
 
   const companyId = user.companyId;
   const company = user.company;
-
-  let products = 0, jobs = 0, articles = 0, events = 0;
-
-  if (companyId) {
-    const counts = await Promise.all([
-      prisma.product.count({ where: { companyId } }),
-      prisma.job.count({ where: { companyId, status: "PUBLISHED" } }),
-      prisma.article.count({ where: { companyId, deletedAt: null } }),
-      prisma.event.count({ where: { companyId } }),
-    ]);
-    [products, jobs, articles, events] = counts;
-  }
 
   return (
     <div>
@@ -44,67 +33,62 @@ export default async function EnterpriseDashboardPage() {
           {company?.status === "PENDING" && (
             <div className="mb-6 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-6">
               <p className="text-yellow-300 text-sm font-medium">企业入驻审核中</p>
-              <p className="mt-1 text-xs text-slate-500">
-                您的企业「{company.name}」正在等待管理员审核，审核通过后即可正式上线。您可以在审核期间完善企业信息，但前台不会展示。
-              </p>
+              <p className="mt-1 text-xs text-slate-500">您的企业「{company.name}」正在等待管理员审核。</p>
             </div>
           )}
           {company?.status === "REJECTED" && (
             <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
               <p className="text-red-400 text-sm font-medium">入驻申请被驳回</p>
-              <p className="mt-1 text-xs text-slate-500">
-                您的企业「{company.name}」入驻申请未通过审核，请联系运营团队了解原因。
-              </p>
+              <p className="mt-1 text-xs text-slate-500">请联系运营团队了解原因。</p>
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard label="产品数量" value={products} />
-            <StatsCard label="活跃职位" value={jobs} />
-            <StatsCard label="关联文章" value={articles} />
-            <StatsCard label="参与活动" value={events} />
-          </div>
-
-          <div className="mt-10">
-            <h2 className="mb-4 text-lg font-semibold text-white">快捷操作</h2>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/enterprise/profile" className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-500 transition-colors">
-                编辑企业资料
-              </Link>
-              <Link href="/enterprise/products/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">
-                添加产品
-              </Link>
-              <Link href="/enterprise/jobs/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">
-                发布职位
-              </Link>
-            </div>
-          </div>
-
-          {company && (
-            <div className="mt-10 rounded-2xl border border-white/10 bg-slate-900/40 p-6">
-              <h2 className="text-lg font-semibold text-white">当前企业</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <p className="text-xs text-slate-500">企业名称</p>
-                  <p className="mt-0.5 text-sm text-white">{company.name}</p>
-                </div>
-                {company.industry && (
-                  <div>
-                    <p className="text-xs text-slate-500">行业</p>
-                    <p className="mt-0.5 text-sm text-white">{company.industry}</p>
-                  </div>
-                )}
-                {company.city && (
-                  <div>
-                    <p className="text-xs text-slate-500">城市</p>
-                    <p className="mt-0.5 text-sm text-white">{company.city}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* 统计数字 — 流式加载，不阻塞页面壳 */}
+          <Suspense fallback={<StatsSkeleton />}>
+            <StatsLoader companyId={companyId} />
+          </Suspense>
         </>
       )}
+
+      <div className="mt-10">
+        <h2 className="mb-4 text-lg font-semibold text-white">快捷操作</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/enterprise/profile" className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-500 transition-colors">编辑企业资料</Link>
+          <Link href="/enterprise/products/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">添加产品</Link>
+          <Link href="/enterprise/jobs/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">发布职位</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function StatsLoader({ companyId }: { companyId: string }) {
+  const [products, jobs, articles, events] = await Promise.all([
+    prisma.product.count({ where: { companyId } }),
+    prisma.job.count({ where: { companyId, status: "PUBLISHED" } }),
+    prisma.article.count({ where: { companyId, deletedAt: null } }),
+    prisma.event.count({ where: { companyId } }),
+  ]);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StatsCard label="产品数量" value={products} />
+      <StatsCard label="活跃职位" value={jobs} />
+      <StatsCard label="关联文章" value={articles} />
+      <StatsCard label="参与活动" value={events} />
+    </div>
+  );
+}
+
+function StatsSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-pulse">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-24 rounded-xl border border-white/10 bg-slate-900/40 p-5">
+          <div className="h-3 w-16 rounded bg-white/5" />
+          <div className="mt-3 h-8 w-12 rounded bg-white/5" />
+        </div>
+      ))}
     </div>
   );
 }

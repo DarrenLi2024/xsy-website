@@ -56,10 +56,7 @@ export default function AdminArticlesPage() {
   }, [q, status, page]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchArticles();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchArticles();
   }, [fetchArticles]);
 
   const total = data?.total ?? 0;

@@ -57,10 +57,7 @@ export default function AdminUsersPage() {
   }, [q, page, role, adminRole]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchUsers();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchUsers();
   }, [fetchUsers]);
 
   const columns: Column<(typeof data.items)[number]>[] = [

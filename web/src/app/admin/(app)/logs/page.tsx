@@ -76,10 +76,7 @@ export default function AdminLogsPage() {
   }, [page, action, resource, userId, dateFrom, dateTo]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchLogs();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchLogs();
   }, [fetchLogs]);
 
   const resourceTypes = useMemo(() => {

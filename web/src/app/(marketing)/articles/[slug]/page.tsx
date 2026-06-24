@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -16,40 +17,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const article = await getPublishedArticleBySlug(slug);
   if (!article) return { title: "文章未找到" };
-  return {
-    title: article.title,
-    description: article.summary ?? undefined,
-  };
+  return { title: article.title, description: article.summary ?? undefined };
 }
 
 export const revalidate = 60;
 
 export default async function ArticleDetailPage({ params }: Props) {
   const { slug } = await params;
-  const article = await safeQuery(
-    () => getPublishedArticleBySlug(slug),
-    null,
-    "ArticleDetailPage",
-  );
-
+  const article = await safeQuery(() => getPublishedArticleBySlug(slug), null, "ArticleDetailPage");
   if (!article) notFound();
-
-  const related = await safeQuery(
-    () =>
-      prisma.article.findMany({
-        where: {
-          status: ArticleStatus.PUBLISHED,
-          deletedAt: null,
-          id: { not: article.id },
-          ...(article.category ? { category: article.category } : {}),
-        },
-        take: 3,
-        orderBy: { publishedAt: "desc" },
-        select: { slug: true, title: true },
-      }),
-    [] as { slug: string; title: string }[],
-    "ArticleDetailRelated",
-  );
 
   return (
     <article className="mx-auto max-w-[720px] px-5 py-14 md:px-8 md:py-20 lg:px-10">
@@ -61,19 +37,12 @@ export default async function ArticleDetailPage({ params }: Props) {
       </h1>
       <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-[#6e6e73]">
         <span>{article.author ?? "芯师爷"}</span>
-        <span className="text-[#d2d2d7]" aria-hidden>
-          ·
-        </span>
+        <span className="text-[#d2d2d7]" aria-hidden>·</span>
         <time>{formatDateZh(article.publishedAt)}</time>
         {article.company ? (
           <>
-            <span className="text-[#d2d2d7]" aria-hidden>
-              ·
-            </span>
-            <Link
-              href={`/companies/${article.company.slug}`}
-              className="font-medium text-[var(--accent)] transition hover:opacity-75"
-            >
+            <span className="text-[#d2d2d7]" aria-hidden>·</span>
+            <Link href={`/companies/${article.company.slug}`} className="font-medium text-[var(--accent)] transition hover:opacity-75">
               {article.company.name}
             </Link>
           </>
@@ -81,36 +50,53 @@ export default async function ArticleDetailPage({ params }: Props) {
       </div>
       {article.coverImage ? (
         <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-2xl border border-black/[0.06] bg-[#f5f5f7]">
-          <Image
-            src={article.coverImage}
-            alt={article.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width:768px) 100vw, 720px"
-          />
+          <Image src={article.coverImage} alt={article.title} fill className="object-cover" priority sizes="(max-width:768px) 100vw, 720px" />
         </div>
       ) : null}
       <div className="prose-xin mt-12">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
       </div>
-      {related.length > 0 ? (
-        <aside className="mt-16 border-t border-black/[0.06] pt-10">
-          <h2 className="text-[15px] font-semibold text-[#1d1d1f]">相关阅读</h2>
-          <ul className="mt-4 space-y-3">
-            {related.map((r) => (
-              <li key={r.slug}>
-                <Link
-                  href={`/articles/${r.slug}`}
-                  className="text-[15px] font-medium text-[var(--accent)] transition hover:opacity-75"
-                >
-                  {r.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      ) : null}
+      {/* 相关阅读 — 非关键路径，流式加载 */}
+      <Suspense fallback={null}>
+        <RelatedArticles articleId={article.id} category={article.category} />
+      </Suspense>
     </article>
+  );
+}
+
+/** 相关推荐 — 独立 async Server Component，不阻塞主内容渲染 */
+async function RelatedArticles({ articleId, category }: { articleId: string; category: string | null }) {
+  const related = await safeQuery(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          deletedAt: null,
+          id: { not: articleId },
+          ...(category ? { category } : {}),
+        },
+        take: 3,
+        orderBy: { publishedAt: "desc" },
+        select: { slug: true, title: true },
+      }),
+    [],
+    "ArticleDetailRelated",
+  );
+
+  if (related.length === 0) return null;
+
+  return (
+    <aside className="mt-16 border-t border-black/[0.06] pt-10">
+      <h2 className="text-[15px] font-semibold text-[#1d1d1f]">相关阅读</h2>
+      <ul className="mt-4 space-y-3">
+        {related.map((r) => (
+          <li key={r.slug}>
+            <Link href={`/articles/${r.slug}`} className="text-[15px] font-medium text-[var(--accent)] transition hover:opacity-75">
+              {r.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }

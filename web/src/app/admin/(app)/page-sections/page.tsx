@@ -108,10 +108,7 @@ export default function AdminPageSectionsPage() {
   }, [searchParams, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchSections();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchSections();
   }, [fetchSections]);
 
   const toggleActive = async (id: string, currentActive: boolean) => {

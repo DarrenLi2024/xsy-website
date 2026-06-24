@@ -66,10 +66,7 @@ export default function JobApplicantsPage() {
   }, [jobId, page, statusFilter, toast]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchData();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchData();
   }, [fetchData]);
 
   const updateStatus = async (applicationId: string, newStatus: string) => {
