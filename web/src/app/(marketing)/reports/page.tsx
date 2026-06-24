@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { safeQuery } from "@/lib/data/safe-query";
 
@@ -12,16 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function ReportsPage() {
-  const reports = await safeQuery(
-    () => prisma.report.findMany({
-      where: { publishedAt: { not: null } },
-      orderBy: { publishedAt: "desc" },
-      take: 40,
-      select: { id: true, title: true, description: true, coverImage: true, category: true, price: true },
-    }),
-    [],
-    "ReportsPage",
-  );
+  const reports = await getReportsSafe();
 
   return (
     <div className="mx-auto max-w-[1200px] px-5 py-14 md:px-10 md:py-20 lg:px-12">
@@ -53,4 +45,49 @@ export default async function ReportsPage() {
       )}
     </div>
   );
+}
+
+/* ───── ISR 缓存 + 空数据安全获取 ───── */
+
+/** 原始数据查询 */
+async function fetchReports() {
+  return safeQuery(
+    () => prisma.report.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { publishedAt: "desc" },
+      take: 40,
+      select: { id: true, title: true, description: true, coverImage: true, category: true, price: true },
+    }),
+    [],
+    "ReportsPage",
+  );
+}
+
+/** unstable_cache 包装 — 空数据抛出以跳过 CDN 缓存 */
+const getCachedReports = unstable_cache(
+  async () => {
+    const data = await fetchReports();
+    if (data.length === 0) {
+      throw new Error("Reports transient empty — skip cache");
+    }
+    return data;
+  },
+  ["reports-page-v1"],
+  { revalidate: 60, tags: ["home"] },
+);
+
+/**
+ * 安全获取报告列表：
+ * 1. 优先尝试缓存数据（含空数据检测）
+ * 2. 缓存穿透时直接查库
+ * 3. 如果确实没有数据（而非瞬态故障），返回空数组
+ */
+async function getReportsSafe() {
+  try {
+    return await getCachedReports();
+  } catch (err) {
+    console.error("[getReportsSafe:cache]", err instanceof Error ? err.message : "error");
+  }
+  // 缓存穿透或空数据 — 直接查库
+  return fetchReports();
 }
