@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import { getEnterpriseFromRequest, unauthorized, ok, badRequest, notFound } from "@/lib/enterprise-api";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +15,7 @@ const updateCompanySchema = z.object({
   socialLinks: z.record(z.string(), z.string()).optional().nullable(),
 });
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const user = await getEnterpriseFromRequest(req);
   if (!user || !user.companyId) return unauthorized();
 
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   return ok(company);
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   const user = await getEnterpriseFromRequest(req);
   if (!user || !user.companyId) return unauthorized();
 

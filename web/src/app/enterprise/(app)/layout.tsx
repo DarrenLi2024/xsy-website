@@ -1,9 +1,6 @@
 import { Suspense } from "react";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+import { getEnterpriseUser } from "@/lib/enterprise-auth";
 import SideNav from "@/components/enterprise/side-nav";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ToastProvider } from "@/components/admin/toast";
@@ -13,18 +10,8 @@ export default async function EnterpriseShellLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!token) redirect("/enterprise/login");
-
-  const session = await verifySessionToken(token);
-  if (!session || (session.role !== "ENTERPRISE" && session.role !== "ADMIN")) {
-    redirect("/enterprise/login");
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.sub },
-    select: { id: true, email: true, name: true, role: true },
-  });
+  // getEnterpriseUser() 使用 React cache()，同请求内多次调用共享结果
+  const user = await getEnterpriseUser();
   if (!user) redirect("/enterprise/login");
 
   return (

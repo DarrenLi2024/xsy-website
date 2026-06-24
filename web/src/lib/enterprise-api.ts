@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 
 export type EnterpriseApiUser = {
@@ -8,11 +9,10 @@ export type EnterpriseApiUser = {
   companyId: string | null;
 };
 
-export async function getEnterpriseFromRequest(req: Request): Promise<EnterpriseApiUser | null> {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
-  if (!match) return null;
-  const session = await verifySessionToken(match[1]);
+export async function getEnterpriseFromRequest(req: NextRequest): Promise<EnterpriseApiUser | null> {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  const session = await verifySessionToken(token);
   if (!session || (session.role !== "ENTERPRISE" && session.role !== "ADMIN")) return null;
   return {
     id: session.sub,

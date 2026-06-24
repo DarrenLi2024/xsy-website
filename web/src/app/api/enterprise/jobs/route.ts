@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
   return ok({ items, total, page, totalPages: Math.ceil(total / PAGE_SIZE) });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const user = await getEnterpriseFromRequest(req);
   if (!user || !user.companyId) return unauthorized();
 

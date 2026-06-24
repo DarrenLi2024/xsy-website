@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 import { adminUserFromSession, type AdminUser } from "@/lib/admin-auth";
 import type { AdminRole } from "@prisma/client";
@@ -11,11 +12,10 @@ export type AdminApiUser = {
   adminRole: AdminRole | null;
 };
 
-export async function getAdminFromRequest(req: Request): Promise<AdminApiUser | null> {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
-  if (!match) return null;
-  const session = await verifySessionToken(match[1]);
+export async function getAdminFromRequest(req: NextRequest): Promise<AdminApiUser | null> {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  const session = await verifySessionToken(token);
   if (!session || session.role !== "ADMIN") return null;
   const user: AdminUser = adminUserFromSession(session);
   return { id: user.id, email: user.email, name: user.name, role: user.role, adminRole: user.adminRole };

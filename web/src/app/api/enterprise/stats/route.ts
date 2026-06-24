@@ -1,7 +1,8 @@
+import { NextRequest } from "next/server";
 import { getEnterpriseFromRequest, unauthorized, ok } from "@/lib/enterprise-api";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const user = await getEnterpriseFromRequest(req);
   if (!user || !user.companyId) return unauthorized();
 
