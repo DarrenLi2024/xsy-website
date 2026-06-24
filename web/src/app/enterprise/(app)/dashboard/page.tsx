@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { getEnterpriseUser, type EnterpriseUser } from "@/lib/enterprise-auth";
+import { getEnterpriseUser } from "@/lib/enterprise-auth";
 import { prisma } from "@/lib/prisma";
 import StatsCard from "@/components/admin/stats-card";
 import Link from "next/link";
@@ -12,6 +11,16 @@ export default async function EnterpriseDashboardPage() {
 
   const companyId = user.companyId;
   const company = user.company;
+
+  let products = 0, jobs = 0, articles = 0, events = 0;
+  if (companyId) {
+    [products, jobs, articles, events] = await Promise.all([
+      prisma.product.count({ where: { companyId } }),
+      prisma.job.count({ where: { companyId, status: "PUBLISHED" } }),
+      prisma.article.count({ where: { companyId, deletedAt: null } }),
+      prisma.event.count({ where: { companyId } }),
+    ]);
+  }
 
   return (
     <div>
@@ -43,52 +52,23 @@ export default async function EnterpriseDashboardPage() {
             </div>
           )}
 
-          {/* 统计数字 — 流式加载，不阻塞页面壳 */}
-          <Suspense fallback={<StatsSkeleton />}>
-            <StatsLoader companyId={companyId} />
-          </Suspense>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard label="产品数量" value={products} />
+            <StatsCard label="活跃职位" value={jobs} />
+            <StatsCard label="关联文章" value={articles} />
+            <StatsCard label="参与活动" value={events} />
+          </div>
+
+          <div className="mt-10">
+            <h2 className="mb-4 text-lg font-semibold text-white">快捷操作</h2>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/enterprise/profile" className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-500 transition-colors">编辑企业资料</Link>
+              <Link href="/enterprise/products/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">添加产品</Link>
+              <Link href="/enterprise/jobs/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">发布职位</Link>
+            </div>
+          </div>
         </>
       )}
-
-      <div className="mt-10">
-        <h2 className="mb-4 text-lg font-semibold text-white">快捷操作</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/enterprise/profile" className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-500 transition-colors">编辑企业资料</Link>
-          <Link href="/enterprise/products/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">添加产品</Link>
-          <Link href="/enterprise/jobs/new" className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors">发布职位</Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-async function StatsLoader({ companyId }: { companyId: string }) {
-  const [products, jobs, articles, events] = await Promise.all([
-    prisma.product.count({ where: { companyId } }),
-    prisma.job.count({ where: { companyId, status: "PUBLISHED" } }),
-    prisma.article.count({ where: { companyId, deletedAt: null } }),
-    prisma.event.count({ where: { companyId } }),
-  ]);
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatsCard label="产品数量" value={products} />
-      <StatsCard label="活跃职位" value={jobs} />
-      <StatsCard label="关联文章" value={articles} />
-      <StatsCard label="参与活动" value={events} />
-    </div>
-  );
-}
-
-function StatsSkeleton() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-pulse">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-24 rounded-xl border border-white/10 bg-slate-900/40 p-5">
-          <div className="h-3 w-16 rounded bg-white/5" />
-          <div className="mt-3 h-8 w-12 rounded bg-white/5" />
-        </div>
-      ))}
     </div>
   );
 }
